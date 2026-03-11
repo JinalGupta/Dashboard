@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ticket Analytics — Vinternship 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --cream: #faf7f2;
+  --warm: #f2ece0;
+  --paper: #ffffff;
+  --border: #e2d9cc;
+  --border2: #c8bfb0;
+  --ink: #1c1711;
+  --ink2: #4a4035;
+  --muted: #8a7d6e;
+  --accent: #c0392b;
+  --accent2: #d97706;
+  --accent3: #1a6b4a;
+  --accent4: #1d4ed8;
+  --accent5: #6d28d9;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* Subtle paper texture via repeating gradient */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 28px,
+    rgba(180,160,130,0.06) 28px,
+    rgba(180,160,130,0.06) 29px
+  );
+  pointer-events:none;
+  z-index:0;
+}
+
+.container {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 40px 28px 100px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── MASTHEAD ── */
+.masthead {
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--border2);
+  padding: 20px 0 18px;
+  margin-bottom: 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.masthead-left h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.masthead-left h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.masthead-meta {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.masthead-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.edition-tag {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--ink);
+  padding: 4px 10px;
+}
+
+.live-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--accent3);
+  letter-spacing: 0.05em;
+}
+
+.live-dot::before {
+  content:'';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent3);
+  animation: blink 2s infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── KPI STRIP ── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  border: 1px solid var(--border2);
+  background: var(--paper);
+  margin-bottom: 28px;
+  box-shadow: 2px 3px 0 var(--border2);
+}
+
+.kpi-item {
+  padding: 20px 20px 18px;
+  border-right: 1px solid var(--border);
+  position: relative;
+}
+
+.kpi-item:last-child { border-right: none; }
+
+.kpi-item::before {
+  content:'';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--ki-color, var(--accent));
+}
+
+.kpi-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.kpi-val {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ki-color, var(--ink));
+}
+
+.kpi-sub {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 5px;
+  font-family: var(--font-mono);
+}
+
+/* ── GRID LAYOUTS ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.grid-eq {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border2);
+  padding: 22px 24px;
+  box-shadow: 2px 3px 0 var(--border);
+  position: relative;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.card-tag {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  background: var(--warm);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+}
+
+/* ── RESOLVER TABLE ── */
+.resolver-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.resolver-table th {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-align: left;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.resolver-table td {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  vertical-align: middle;
+}
+
+.resolver-table tr:last-child td { border-bottom: none; }
+
+.res-bar-cell { width: 120px; }
+
+.res-bar-bg {
+  width: 100%;
+  height: 5px;
+  background: var(--warm);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.res-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent3);
+}
+
+.rank-num {
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--border2);
+  width: 24px;
+}
+
+.rank-num.top { color: var(--accent); }
+
+/* ── CATEGORY PILLS ── */
+.cat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cat-name {
+  font-size: 0.78rem;
+  font-family: var(--font-sans);
+  color: var(--ink2);
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.cat-bar-bg {
+  flex: 1;
+  height: 8px;
+  background: var(--warm);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.cat-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.cat-num {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  width: 28px;
+  text-align: right;
+}
+
+/* ── TABLE ── */
+.main-table-wrap {
+  background: var(--paper);
+  border: 1px solid var(--border2);
+  box-shadow: 2px 3px 0 var(--border);
+  margin-bottom: 20px;
+}
+
+.table-topbar {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.table-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.table-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.search-inp {
+  background: var(--warm);
+  border: 1px solid var(--border2);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink);
+  outline: none;
+  width: 220px;
+}
+
+.search-inp::placeholder { color: var(--muted); }
+.search-inp:focus { border-color: var(--ink); }
+
+.filt-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.filt-btn {
+  padding: 5px 11px;
+  border: 1px solid var(--border2);
+  background: var(--warm);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filt-btn:hover, .filt-btn.on {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+table.tickets {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+table.tickets th {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border2);
+  background: var(--warm);
+}
+
+table.tickets td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  font-family: var(--font-mono);
+  color: var(--ink2);
+}
+
+table.tickets tr:hover td { background: var(--warm); }
+table.tickets tr:last-child td { border-bottom: none; }
+
+.cat-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.res-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.reason-td {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.pgn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pgn-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border2);
+  background: var(--warm);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pgn-btn:hover, .pgn-btn.on {
+  background: var(--ink);
+  color: var(--cream);
+  border-color: var(--ink);
+}
+
+.pgn-info {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-right: 8px;
+}
+
+/* section divider */
+.section-rule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 28px 0 20px;
+}
+
+.section-rule span {
+  font-family: var(--font-serif);
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.section-rule::before, .section-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border2);
+}
+
+@media(max-width:1000px){
+  .kpi-strip { grid-template-columns: repeat(3,1fr); }
+  .grid-2,.grid-3,.grid-eq { grid-template-columns: 1fr; }
+}
+@media(max-width:640px){
+  .kpi-strip { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Masthead -->
+  <div class="masthead">
+    <div class="masthead-left">
+      <h1>Ticket <em>Analytics</em></h1>
+      <div class="masthead-meta">Vinternship Support Intelligence &nbsp;·&nbsp; Jan – Mar 2026</div>
+    </div>
+    <div class="masthead-right">
+      <div class="edition-tag">151 Closed Tickets</div>
+      <div class="live-dot">All tickets resolved</div>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <div class="section-rule"><span>Volume &amp; Distribution</span></div>
+
+  <!-- Row 1: Timeline + Donut -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Ticket Volume Over Time</div>
+        <div class="card-tag">Jan–Mar 2026</div>
+      </div>
+      <canvas id="volumeChart" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Category Breakdown</div>
+        <div class="card-tag">7 categories</div>
+      </div>
+      <canvas id="catDonut" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 2: Category bars + Resolution dist + Msg dist -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Tickets by Category</div>
+        <div class="card-tag">Count</div>
+      </div>
+      <div class="cat-grid" id="catBars"></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Resolution Time</div>
+        <div class="card-tag">Distribution</div>
+      </div>
+      <canvas id="resChart" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Messages per Ticket</div>
+        <div class="card-tag">Histogram</div>
+      </div>
+      <canvas id="msgChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="section-rule"><span>Resolver Performance</span></div>
+
+  <!-- Row 3: Resolver table + Avg resolution by category -->
+  <div class="grid-eq">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Resolver Leaderboard</div>
+        <div class="card-tag">By tickets closed</div>
+      </div>
+      <table class="resolver-table" id="resolverTable"></table>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">Avg Resolution by Category</div>
+        <div class="card-tag">Hours</div>
+      </div>
+      <canvas id="catResChart" height="240"></canvas>
+    </div>
+  </div>
+
+  <div class="section-rule"><span>All Tickets</span></div>
+
+  <!-- Main Table -->
+  <div class="main-table-wrap">
+    <div class="table-topbar">
+      <div class="table-topbar-left">
+        <div class="table-title">Ticket Log</div>
+        <input class="search-inp" type="text" placeholder="Search reason, creator, resolver…" id="searchInp"/>
+      </div>
+      <div class="filt-wrap" id="filtWrap"></div>
+    </div>
+    <table class="tickets">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Creator</th>
+          <th>Resolver</th>
+          <th>Category</th>
+          <th>Reason</th>
+          <th>Msgs</th>
+          <th>Resolution</th>
+        </tr>
+      </thead>
+      <tbody id="ticketTbody"></tbody>
+    </table>
+    <div class="pgn" id="pgn"></div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const CAT_META = {
+  'Course / Learning':      { color: '#1a6b4a', bg: '#dcfce7' },
+  'General Inquiry':        { color: '#4a4035', bg: '#f5f0e8' },
+  'Internship Eligibility': { color: '#c0392b', bg: '#fee2e2' },
+  'Platform / Technical':   { color: '#1d4ed8', bg: '#dbeafe' },
+  'Health Points (HP)':     { color: '#d97706', bg: '#fef3c7' },
+  'NPTEL / Certification':  { color: '#6d28d9', bg: '#ede9fe' },
+  'Registration / Login':   { color: '#0e7490', bg: '#cffafe' },
+};
+
+const TICKETS = [{"key":"closed-0374","creator":"kanchandeshmukh_69590","resolver":"nitin_fighter1379","reason":"Hello Team,  My name is Kanchan Devanand Deshmukh. I am from the AKSians cohort and my registered email ID is [co.2023.kddeshmukh@bitwardha.ac.in](mai","category":"Internship Eligibility","msg_count":13,"resolution_hours":75.77,"date":"2026-01-29"},{"key":"closed-0397","creator":"gowsmaithine","resolver":"nitin_fighter1379","reason":"Respected Ma\u2019am,  I joined the cohort a little late and was not aware of the initial details of the program. Because of this, I unfortunately missed t","category":"Course / Learning","msg_count":10,"resolution_hours":45.66,"date":"2026-03-09"},{"key":"closed-0390","creator":"satav701","resolver":"nitin_fighter1379","reason":"I hope you are doing well.  I would like to inform you that my friend from the Kruskalians batch is currently unable to join the Vintership Discord se","category":"Internship Eligibility","msg_count":11,"resolution_hours":72.48,"date":"2026-03-04"},{"key":"closed-0371","creator":"disharay_","resolver":"nitin_fighter1379","reason":"I am not receiving the zoom meeting links for standup sessions in my registered email id","category":"Registration / Login","msg_count":28,"resolution_hours":136.33,"date":"2026-03-05"},{"key":"closed-0411","creator":"pannala_lokesh_reddy","resolver":"jinalgupta.","reason":"I have submitted CaseStudy1 of TYPESCRIPT on 9th march 2026, on the dashboard it is still not updated yet, iam from AKSians Cohort, kindly look into t","category":"Course / Learning","msg_count":10,"resolution_hours":1.35,"date":"2026-03-11"},{"key":"closed-0307","creator":"swatimuttannavar","resolver":"nitin_fighter1379","reason":"I have registered for Programming in Java. Can I also take this internship under AKSians, or is there any other cohort available for those who have enr","category":"Internship Eligibility","msg_count":20,"resolution_hours":219.44,"date":"2026-03-01"},{"key":"closed-0407","creator":"dakshith_kura_52200","resolver":"jinalgupta.","reason":"Request Regarding Removal of Name from Dashboard - PInternship Cohort 3 (Kruskalians)","category":"Internship Eligibility","msg_count":7,"resolution_hours":24.37,"date":"2026-03-10"},{"key":"closed-0364","creator":"priyalparnami","resolver":"nitin_fighter1379","reason":"Hi! Currently, there is a lot of study and work pressure in my college. Soon, a technical fest is going to held from 9 March to 11 March and I am a vo","category":"Course / Learning","msg_count":24,"resolution_hours":198.61,"date":"2026-03-05"},{"key":"closed-0398","creator":"g.lakshmi","resolver":"jinalgupta.","reason":"About A1 submission form .I have submitted on 4th March. Before the deadline i.e 6th March.i have submitted the A1 task.please check once.i have got t","category":"General Inquiry","msg_count":9,"resolution_hours":44.24,"date":"2026-03-09"},{"key":"closed-0388","creator":"jinalgupta.","resolver":"jinalgupta.","reason":"Pending registration for the RKAsian Batch on Vibe Platform","category":"Registration / Login","msg_count":8,"resolution_hours":75.03,"date":"2026-03-08"},{"key":"closed-0410","creator":"sereena_thomas","resolver":"nitin_fighter1379","reason":"I have completed 51% till now and today is 11 th march so is there a deadline for completing the course upto 75% by today or was it tomorrow?","category":"Course / Learning","msg_count":6,"resolution_hours":3.89,"date":"2026-03-11"},{"key":"closed-0396","creator":"abhishek.7770","resolver":"abhishek.7770","reason":"Hp is not updated for A2 activity which is linkedin. Already done the activity and filled the completion  form before deadline","category":"Health Points (HP)","msg_count":10,"resolution_hours":43.58,"date":"2026-03-09"},{"key":"closed-0399","creator":"srivastavprateek1712","resolver":"nitin_fighter1379","reason":"i can't register in vibe","category":"Registration / Login","msg_count":13,"resolution_hours":24.87,"date":"2026-03-09"},{"key":"closed-0383","creator":"sayondey0952_87796","resolver":"nitin_fighter1379","reason":"I have completed the course 100%. Now I want to access the case studies. How to access the case studies?","category":"Course / Learning","msg_count":9,"resolution_hours":94.68,"date":"2026-03-07"},{"key":"ticket-0406","creator":"mayankpandey33","resolver":"jinalgupta.","reason":"I am part of the AKSians cohort and had a query regarding the NPTEL certification and offer letter eligibility. I did not pay the exam fee for the NPT","category":"NPTEL / Certification","msg_count":10,"resolution_hours":2.27,"date":"2026-03-10"},{"key":"closed-0395","creator":"sanhitamukhopadhyay","resolver":"jinalgupta.","reason":"HP Reduction","category":"Health Points (HP)","msg_count":20,"resolution_hours":24.08,"date":"2026-03-09"},{"key":"closed-0385","creator":"chandrasaibadam_04486","resolver":"nitin_fighter1379","reason":"course completion","category":"Course / Learning","msg_count":17,"resolution_hours":86.85,"date":"2026-03-07"},{"key":"ticket-0389","creator":"mayankboob","resolver":"nitin_fighter1379","reason":"for Activity A2 , HP points not added yet","category":"Health Points (HP)","msg_count":29,"resolution_hours":99.74,"date":"2026-03-08"},{"key":"closed-0402","creator":"lakshyagupta_85218","resolver":"jinalgupta.","reason":"I recently joined the discord server and saw the link for vibe to enroll in the the course but its not accepting anymore registrations. Is there any w","category":"Course / Learning","msg_count":11,"resolution_hours":1.7,"date":"2026-03-09"},{"key":"closed-0386","creator":"alalker789","resolver":"nitin_fighter1379","reason":"I mistakenly submitted the blog task completion form thinking I would complete the blog before the deadline. However, I had some medical issues (cough,","category":"Platform / Technical","msg_count":10,"resolution_hours":41.75,"date":"2026-03-07"},{"key":"closed-0373","creator":"subhamsadangi","resolver":"nitin_fighter1379","reason":"i am not receveing any mail regarding standup in my registered mail","category":"Registration / Login","msg_count":36,"resolution_hours":182.93,"date":"2026-03-05"},{"key":"closed-0376","creator":"kartikrathore0977","resolver":"nitin_fighter1379","reason":"Follow-up on Appeal Request Regarding HP Threshold Removal","category":"Health Points (HP)","msg_count":10,"resolution_hours":86.85,"date":"2026-03-05"},{"key":"closed-0382","creator":"ananyaray0965","resolver":"nitin_fighter1379","reason":"I have enrolled on 02\/03\/26 on vibe  i accessed the lectures from that day so this is the date of my joininng pls ensure me will I get the offer lette","category":"Course / Learning","msg_count":7,"resolution_hours":17.44,"date":"2026-03-06"},{"key":"closed-0222","creator":"asireddylokeshreddy","resolver":"jinalgupta.","reason":"Actually I completed Joc last sem and enrolled in Deep learning for this sem in nptel  and didn't pay exam fee. Am I eligible to continue this vinters","category":"NPTEL / Certification","msg_count":12,"resolution_hours":305.42,"date":"2026-02-24"},{"key":"closed-0391","creator":"tanya_kumari.51111","resolver":"nitin_fighter1379","reason":"Hello, I realized that I missed the deadline for submitting Activity A1. I noticed that the form link was still accessible, so I went ahead and complet","category":"General Inquiry","msg_count":8,"resolution_hours":21.45,"date":"2026-03-08"},{"key":"ticket-0360","creator":"meghparnabhakat","resolver":"jinalgupta.","reason":"I couldn't continue regularly","category":"General Inquiry","msg_count":13,"resolution_hours":91.76,"date":"2026-03-05"},{"key":"closed-0316","creator":"854951486697635840","resolver":"jinalgupta.","reason":"Respected Sir\/Madam, I have completed around 30% of the Vibe internship. The NPTEL exam registration deadline has passed, and the NPTEL+ option is not","category":"NPTEL / Certification","msg_count":10,"resolution_hours":134.76,"date":"2026-03-02"},{"key":"closed-0384","creator":"manas_pandey","resolver":"nitin_fighter1379","reason":"Why I'm not getting the offer letter? Is it affect my studies in this program?","category":"Internship Eligibility","msg_count":22,"resolution_hours":41.64,"date":"2026-03-07"},{"key":"closed-0392","creator":"jj032807","resolver":"nitin_fighter1379","reason":"from my first and second module its not showing completed even though i have completed watching all my videos from first two modules,pls crct it","category":"Platform / Technical","msg_count":13,"resolution_hours":9.85,"date":"2026-03-08"},{"key":"closed-0393","creator":"kuroryujinnhoshinima","resolver":"nitin_fighter1379","reason":"Finished the course 100% yet did not receive the ticket, need the offer letter urgently for official leave from college","category":"Course / Learning","msg_count":16,"resolution_hours":14.56,"date":"2026-03-08"},{"key":"closed-0325","creator":"dhanyaaa.__","resolver":"jinalgupta.","reason":"I haven\u2019t registered for the nptel exam. The mail regarding internship mentioned only about being enrolled in any of the course. Unfortunately, only a","category":"NPTEL / Certification","msg_count":37,"resolution_hours":130.62,"date":"2026-03-02"},{"key":"closed-0358","creator":"vedratna_bura","resolver":"jinalgupta.","reason":"Quizzes arent loading in JSX Foundation module","category":"Platform / Technical","msg_count":26,"resolution_hours":103.55,"date":"2026-03-04"},{"key":"closed-0336","creator":"aayushkumarmishra0975","resolver":"nitin_fighter1379","reason":"not got offer letter completed 23% course","category":"Course / Learning","msg_count":13,"resolution_hours":67.29,"date":"2026-03-03"},{"key":"closed-0375","creator":"siri_04666","resolver":"nitin_fighter1379","reason":"Hello Support Team,  I completed my case study before the 5th March deadline and tried to upload it around 11:30 PM, but the portal showed a \"Server N","category":"Course / Learning","msg_count":13,"resolution_hours":41.75,"date":"2026-03-05"},{"key":"closed-0274","creator":"sekiro_vg81","resolver":"jinalgupta.","reason":"video quality issue on vibe","category":"Platform / Technical","msg_count":31,"resolution_hours":165.68,"date":"2026-02-26"},{"key":"closed-0379","creator":"peethakowsalya","resolver":"nitin_fighter1379","reason":"I accidentally entered my name incorrectly in the consent form. Can I submit the form again with the correct name?","category":"General Inquiry","msg_count":8,"resolution_hours":14.56,"date":"2026-03-06"},{"key":"closed-0380","creator":"khushalagrawalwin251374_83733","resolver":"nitin_fighter1379","reason":"Good evening, I did not see the required text file format to be submitted for the case studies as I had exams for the past 2 weeks. I have submitted 2","category":"General Inquiry","msg_count":11,"resolution_hours":14.56,"date":"2026-03-06"},{"key":"closed-0366","creator":"mahathi137","resolver":"nitin_fighter1379","reason":"HP reduced for  CS Week 3 i got -5 % hp but i completed the case studies","category":"Health Points (HP)","msg_count":14,"resolution_hours":37.76,"date":"2026-03-05"},{"key":"closed-0261","creator":"__its_om_148343","resolver":"jinalgupta.","reason":"i have enrolled in the nptel DM course but i have not registered for the exam so am i eligible for this internship and offer letter","category":"NPTEL / Certification","msg_count":11,"resolution_hours":170.75,"date":"2026-02-26"},{"key":"closed-0367","creator":"pratik_113_28859","resolver":"nitin_fighter1379","reason":"Having a doubt","category":"General Inquiry","msg_count":15,"resolution_hours":18.53,"date":"2026-03-05"},{"key":"closed-0372","creator":"ananyaray0965","resolver":"jinalgupta.","reason":"I have not received any email for zoom meeting","category":"General Inquiry","msg_count":6,"resolution_hours":1.08,"date":"2026-03-05"},{"key":"closed-0381","creator":"manvith2115.","resolver":"nitin_fighter1379","reason":"I've been removed from the dashboard from the kruskalians batch","category":"Internship Eligibility","msg_count":7,"resolution_hours":0.38,"date":"2026-03-06"},{"key":"closed-0361","creator":"harshhhh4u","resolver":"nitin_fighter1379","reason":"name not showing on vinternship dashboard","category":"Internship Eligibility","msg_count":11,"resolution_hours":24.78,"date":"2026-03-05"},{"key":"closed-0378","creator":"anamjumnal","resolver":"jinalgupta.","reason":"About health points","category":"Health Points (HP)","msg_count":15,"resolution_hours":0.47,"date":"2026-03-06"},{"key":"closed-0301","creator":"samarthkapoor_","resolver":"jinalgupta.","reason":"Glitch in submitting Typescript case study","category":"Course / Learning","msg_count":33,"resolution_hours":117.47,"date":"2026-03-01"},{"key":"closed-0303","creator":"1471876440218943520","resolver":"jinalgupta.","reason":"unable to access quiz and next video","category":"Course / Learning","msg_count":9,"resolution_hours":110.72,"date":"2026-03-01"},{"key":"closed-0340","creator":"1472067424882262126","resolver":"jinalgupta.","reason":"Health Point not increased for the A1 and A2 activity","category":"Health Points (HP)","msg_count":8,"resolution_hours":4.84,"date":"2026-03-03"},{"key":"closed-0342","creator":"1472094063408885760","resolver":"jinalgupta.","reason":"I have missed my  registation for the NPTEL exam , can I still do this internship ?","category":"NPTEL / Certification","msg_count":8,"resolution_hours":67.29,"date":"2026-03-03"},{"key":"closed-0321","creator":"somiparnapal","resolver":"nitin_fighter1379","reason":"Not meeting the course completion criteria within deadline","category":"Course / Learning","msg_count":16,"resolution_hours":65.95,"date":"2026-03-02"},{"key":"closed-0289","creator":"gopika.ravi","resolver":"jinalgupta.","reason":"respected sir\/madam, i have already completed 21% of the course and today is the 5th day after i registeered for the course. i have completed 21% but","category":"Internship Eligibility","msg_count":11,"resolution_hours":149.33,"date":"2026-02-28"},{"key":"closed-0265","creator":"mohanavallis","resolver":"jinalgupta.","reason":"I am facing technical issues and I am unable to open the Zoom class on Zoom Video Communications. Due to this issue, I could not attend the previous c","category":"Platform / Technical","msg_count":19,"resolution_hours":180.15,"date":"2026-02-26"},{"key":"closed-0272","creator":"sukanyasarkar_42553","resolver":"jinalgupta.","reason":"Withdrawal from Internship & Query about Future Cohorts","category":"Internship Eligibility","msg_count":18,"resolution_hours":63.63,"date":"2026-02-26"},{"key":"closed-0370","creator":"sereena_thomas","resolver":"jinalgupta.","reason":"Request to consider taking me in volunteers group. I would genuinely like to help people out as much as I can.","category":"General Inquiry","msg_count":11,"resolution_hours":68.8,"date":"2026-03-05"},{"key":"closed-0293","creator":"swetha_71031","resolver":"jinalgupta.","reason":"Hp deduction","category":"Health Points (HP)","msg_count":22,"resolution_hours":50.27,"date":"2026-02-28"},{"key":"closed-0377","creator":"anamjumnal","resolver":"jinalgupta.","reason":"About activity A2","category":"General Inquiry","msg_count":7,"resolution_hours":0.99,"date":"2026-03-06"},{"key":"closed-0368","creator":"anamjumnal","resolver":"nitin_fighter1379","reason":"The videos and the quizzes aren't in the right order","category":"Platform / Technical","msg_count":12,"resolution_hours":0.29,"date":"2026-03-05"},{"key":"closed-0332","creator":"a.avinash","resolver":"nitin_fighter1379","reason":"How to participate in this vinternship","category":"Internship Eligibility","msg_count":12,"resolution_hours":65.83,"date":"2026-03-03"},{"key":"closed-0345","creator":"gurleenk_2210","resolver":"nitin_fighter1379","reason":"I have joined the Vinternship  AKSians on 19\/02\/2026 and completed 3% of course only but according to milestone one has to complete 25% course in 1 we","category":"Course / Learning","msg_count":11,"resolution_hours":20.28,"date":"2026-03-03"},{"key":"closed-0369","creator":"pannala_lokesh_reddy","resolver":"sreehari5371","reason":"Iam currently watching video 11 of \u2018Configuring Typescript for Real Projects\u2019, under module \u2018Typescript\u2019, the video 11 is stuck and running in loop an","category":"Platform / Technical","msg_count":7,"resolution_hours":2.57,"date":"2026-03-05"},{"key":"closed-0365","creator":"mirajane5471","resolver":"nitin_fighter1379","reason":"I have not received any email regarding the standup session and its link","category":"General Inquiry","msg_count":11,"resolution_hours":0.12,"date":"2026-03-05"},{"key":"closed-0280","creator":"socialguru1159","resolver":"jinalgupta.","reason":"Registration","category":"Registration / Login","msg_count":17,"resolution_hours":23.1,"date":"2026-02-27"},{"key":"closed-0350","creator":"jinalgupta.","resolver":"jinalgupta.","reason":"I have completed my A1 activity but in HP dashboard my bonous is displayed as +5% but not added to total . I am from AKSians Batch.Please look into th","category":"Health Points (HP)","msg_count":11,"resolution_hours":1.02,"date":"2026-03-04"},{"key":"closed-0363","creator":"manas_pandey","resolver":"nitin_fighter1379","reason":"i have completed more than 20 % of the course but I haven't got my offer letter","category":"Course / Learning","msg_count":10,"resolution_hours":0.08,"date":"2026-03-05"},{"key":"closed-0347","creator":"jems_1234","resolver":"jinalgupta.","reason":"Hello,  I had previously raised a ticket regarding my viva completion being stuck at 99.9% and the resulting reduction in my health points. The ticket","category":"Course / Learning","msg_count":10,"resolution_hours":42.45,"date":"2026-03-03"},{"key":"closed-0362","creator":"yashkalra27","resolver":"nitin_fighter1379","reason":"Wont be able to give Viva till 20th March, 2026","category":"General Inquiry","msg_count":16,"resolution_hours":0.1,"date":"2026-03-05"},{"key":"closed-0337","creator":"mirajane5471","resolver":"jinalgupta.","reason":"My name(Anuska Sarkar) or email id is not showing in the hp dashboard, I am a part of cohort 4 ,  i am already in the vibe platform,  my student email","category":"Course / Learning","msg_count":17,"resolution_hours":43.16,"date":"2026-03-03"},{"key":"closed-0346","creator":"srivally_88614","resolver":"jinalgupta.","reason":"I have finished the ViBe course long before the deadline but it shows 99.8%. I have mailed the support desk multiple times with no response. My HP has","category":"Course / Learning","msg_count":8,"resolution_hours":17.33,"date":"2026-03-03"},{"key":"closed-0359","creator":"priyasarwar","resolver":"jinalgupta.","reason":"Sir\/mam, I have completed 28% as my vibe progress, but i have not recived offer latter till now.","category":"Internship Eligibility","msg_count":16,"resolution_hours":0.69,"date":"2026-03-05"},{"key":"closed-0343","creator":"gauritiwari_76915","resolver":"jinalgupta.","reason":"Regarding ViBe 100% completion","category":"Course / Learning","msg_count":9,"resolution_hours":12.31,"date":"2026-03-03"},{"key":"closed-0344","creator":"rama_29624","resolver":"jinalgupta.","reason":"I submitted blog of my internship jouney in sudharsan sir's github repository under blogs folder.  But , i understood, only selected blogs need to sub","category":"Internship Eligibility","msg_count":10,"resolution_hours":17.32,"date":"2026-03-03"},{"key":"closed-0297","creator":"khwahish93","resolver":"jinalgupta.","reason":"query regarding course","category":"Course / Learning","msg_count":17,"resolution_hours":100.66,"date":"2026-03-01"},{"key":"closed-0281","creator":"akashmukherjee0837","resolver":"jinalgupta.","reason":"Hp related issues","category":"Health Points (HP)","msg_count":24,"resolution_hours":50.27,"date":"2026-02-27"},{"key":"closed-0351","creator":"staticfan","resolver":"nitin_fighter1379","reason":"Regarding formatting issue in case study","category":"Course / Learning","msg_count":31,"resolution_hours":34.42,"date":"2026-03-04"},{"key":"closed-0329","creator":"anish_01693","resolver":"jinalgupta.","reason":"Regarding deduction in health points","category":"Health Points (HP)","msg_count":14,"resolution_hours":72.32,"date":"2026-03-03"},{"key":"closed-0355","creator":"green_soil_70600","resolver":"jinalgupta.","reason":"Hi, I am BAVITHA S (EUCLIDIANS),  I want to raise this ticket regarding the 75% ViBA milestone","category":"Internship Eligibility","msg_count":12,"resolution_hours":71.79,"date":"2026-03-04"},{"key":"closed-0311","creator":"deepshichoubey","resolver":"nitin_fighter1379","reason":"Good morning, I registered on ViBe on 23 feb 2026, completed 28% till now but my name is not present on the health points dashboard.","category":"Course / Learning","msg_count":19,"resolution_hours":47.1,"date":"2026-03-02"},{"key":"closed-0276","creator":"nitheesh_chandra","resolver":"jinalgupta.","reason":"A question in the quiz is not told in the lecture video","category":"General Inquiry","msg_count":15,"resolution_hours":68.01,"date":"2026-02-27"},{"key":"closed-0309","creator":"tejeswari_","resolver":"jinalgupta.","reason":"I submitted 6 case studies yesterday, but they are not appearing on the dashboard","category":"General Inquiry","msg_count":17,"resolution_hours":76.84,"date":"2026-03-02"},{"key":"closed-0330","creator":"coralone.","resolver":"jinalgupta.","reason":"How do I submit some questions\/issues with case studies? I see that case study 19 with Typescript is a bit confusing. Especially for newbees like me. ","category":"Course / Learning","msg_count":15,"resolution_hours":49.86,"date":"2026-03-03"},{"key":"closed-0320","creator":"saloni_sharma_","resolver":"nitin_fighter1379","reason":"Name: Saloni Sharma - Cohort Name: AKSians -I enrolled on the 19th, but due to my assessments and mid-term examinations, I was able to complete only 1","category":"Course / Learning","msg_count":21,"resolution_hours":65.95,"date":"2026-03-02"},{"key":"closed-0318","creator":"abhishek.7770","resolver":"nitin_fighter1379","reason":"Incorrectly filled A1 instead of A2 activity in the form","category":"General Inquiry","msg_count":21,"resolution_hours":32.45,"date":"2026-03-02"},{"key":"closed-0333","creator":"aryankumararya_","resolver":"jinalgupta.","reason":"I have completed my Vibe lecture with 100% completion. A 10% increase is showing in individual HP, but the health points have not been added to my tot","category":"Course / Learning","msg_count":10,"resolution_hours":47.1,"date":"2026-03-03"},{"key":"closed-0338","creator":"anshit_14_35651","resolver":"jinalgupta.","reason":"HP Not Updated After Case Study Submission","category":"Course / Learning","msg_count":15,"resolution_hours":40.0,"date":"2026-03-03"},{"key":"closed-0275","creator":"dhanalakshmisj0458","resolver":"jinalgupta.","reason":"Good morning,there is an issue with my hp,Even after completing the tasks(activities) on time,I got a negative hp for one activity. Because of which I","category":"Health Points (HP)","msg_count":34,"resolution_hours":148.39,"date":"2026-02-27"},{"key":"closed-0354","creator":"1472161047073161318","resolver":"jinalgupta.","reason":"I don't understand,what is A1,A2,A3?","category":"General Inquiry","msg_count":5,"resolution_hours":26.39,"date":"2026-03-04"},{"key":"closed-0356","creator":"sanhitamukhopadhyay","resolver":"jinalgupta.","reason":"Regarding Upcoming semester exams at my university","category":"General Inquiry","msg_count":18,"resolution_hours":28.93,"date":"2026-03-04"},{"key":"closed-0339","creator":"anirudhraobeedu","resolver":"jinalgupta.","reason":"Not a College Student. Requesting clarification on the forms provided.","category":"General Inquiry","msg_count":9,"resolution_hours":31.59,"date":"2026-03-03"},{"key":"closed-0335","creator":"shweta_56797","resolver":"jinalgupta.","reason":"Regarding not receiving the health points for activity A1 and A2. I have submitted the forms for both A1 and A2 activity but haven't received health p","category":"Health Points (HP)","msg_count":19,"resolution_hours":30.63,"date":"2026-03-03"},{"key":"closed-0357","creator":"jinalgupta.","resolver":"jinalgupta.","reason":"Test","category":"General Inquiry","msg_count":6,"resolution_hours":0.04,"date":"2026-03-04"},{"key":"closed-0328","creator":"shriyasharma_10","resolver":"nitin_fighter1379","reason":"My 10% Vibe was never added to my total hp but it show in individual hp . I emailed before, but it\u2019s still not fixed. My HP should be higher than 131.","category":"Course / Learning","msg_count":12,"resolution_hours":35.5,"date":"2026-03-03"},{"key":"closed-0295","creator":"pinapatrunivenkatarohit","resolver":"jinalgupta.","reason":"Regarding the issue while submitting the case study which is not updating on dashboard and reduction of my hp","category":"Course / Learning","msg_count":14,"resolution_hours":89.33,"date":"2026-02-28"},{"key":"closed-0269","creator":"shaik.sannuarshi","resolver":"jinalgupta.","reason":"Hp","category":"Health Points (HP)","msg_count":32,"resolution_hours":144.94,"date":"2026-02-26"},{"key":"closed-0291","creator":"abiramk0107","resolver":"jinalgupta.","reason":"I am unable to look for the mistakes committed in quiz it doesnot show which questions I have made wrong. Plz rectify this.","category":"General Inquiry","msg_count":16,"resolution_hours":63.63,"date":"2026-02-28"},{"key":"closed-0287","creator":"gauravdhawan.","resolver":"jinalgupta.","reason":"Not able to join general announcement group","category":"General Inquiry","msg_count":14,"resolution_hours":108.26,"date":"2026-02-28"},{"key":"closed-0282","creator":"1471788893892042792","resolver":"jinalgupta.","reason":"Im not getting anything in my enrolled courses","category":"Course / Learning","msg_count":9,"resolution_hours":78.72,"date":"2026-02-27"},{"key":"closed-0273","creator":"sekiro_vg81","resolver":"jinalgupta.","reason":"video quality issue on vibe","category":"Platform / Technical","msg_count":15,"resolution_hours":137.01,"date":"2026-02-26"},{"key":"closed-0263","creator":"shreyansh3122","resolver":"jinalgupta.","reason":"Offer letter","category":"Internship Eligibility","msg_count":20,"resolution_hours":152.7,"date":"2026-02-26"},{"key":"closed-0252","creator":"ayush_iitm_21877","resolver":"jinalgupta.","reason":"issue related with discord voice settings","category":"Platform / Technical","msg_count":18,"resolution_hours":170.75,"date":"2026-02-25"},{"key":"closed-0324","creator":"aksharanelakuditi08","resolver":"jinalgupta.","reason":"Consent form","category":"General Inquiry","msg_count":11,"resolution_hours":42.03,"date":"2026-03-02"},{"key":"closed-0231","creator":"meghparnabhakat","resolver":"jinalgupta.","reason":"Hello ma'am\/sir,i have one query that from last two days i was busy for my college.And know I don't understand anything that has been written in announ","category":"General Inquiry","msg_count":22,"resolution_hours":85.65,"date":"2026-02-24"},{"key":"closed-0348","creator":"mumtazparveen","resolver":"nitin_fighter1379","reason":"It is mentioned in the current activity that we must update our profile picture, but my profile picture suits well as per the guidelines. Shall I stil","category":"General Inquiry","msg_count":7,"resolution_hours":0.85,"date":"2026-03-03"},{"key":"closed-0331","creator":"anamjumnal","resolver":"nitin_fighter1379","reason":"About the activity A1","category":"General Inquiry","msg_count":11,"resolution_hours":8.06,"date":"2026-03-03"},{"key":"closed-0302","creator":"sanjay.a_20","resolver":"jinalgupta.","reason":"I had previously raised a ticket regarding the 10% HP deduction when my ViBe progress was stuck at 99.9%. I was informed that I would be considered as","category":"Course / Learning","msg_count":11,"resolution_hours":45.96,"date":"2026-03-01"},{"key":"closed-0223","creator":"aayushishipra","resolver":"jinalgupta.","reason":"Hello sir\/mam  I am a student of cohort 5 Akasians  I have my completed my joy of computing python NPTEL courses in last sem and this sem I have enrol","category":"NPTEL / Certification","msg_count":23,"resolution_hours":129.28,"date":"2026-02-24"},{"key":"closed-0323","creator":"1471775023764025478","resolver":"jinalgupta.","reason":"I have completed 25 percentage of course before deadline but i was not rewarded bonous HP points (2.5%) my HP points still remain 100.Please help me o","category":"Course / Learning","msg_count":10,"resolution_hours":28.93,"date":"2026-03-02"},{"key":"closed-0334","creator":"1471959028042629160","resolver":"jinalgupta.","reason":"A sample ticket","category":"General Inquiry","msg_count":4,"resolution_hours":0.0,"date":"2026-03-03"},{"key":"closed-0294","creator":"anamjumnal","resolver":"a0rous","reason":"Issues in quiz","category":"Platform / Technical","msg_count":31,"resolution_hours":0.85,"date":"2026-02-28"},{"key":"closed-0327","creator":"avi_d_vedi","resolver":"jinalgupta.","reason":"My 10% Vibe completion HP was never added to my total HP. I previously sent an email regarding this issue, but it remains unresolved.","category":"Course / Learning","msg_count":12,"resolution_hours":0.99,"date":"2026-03-03"},{"key":"closed-0322","creator":"bharathgoud0416_47228","resolver":"jinalgupta.","reason":"The reason to raise the ticket is my name is removed from the Dash board.My major HP is decreased in VIBe week 4. I have completed my vibe course to 9","category":"Course / Learning","msg_count":13,"resolution_hours":41.6,"date":"2026-03-02"},{"key":"closed-0304","creator":"tekulanavdeep","resolver":"jinalgupta.","reason":"I was removed from the 'Euclideans' cohort today after an HP drop below 131. This deduction of HP was caused by a technical glitch on Feb 12th","category":"Platform / Technical","msg_count":14,"resolution_hours":36.09,"date":"2026-03-01"},{"key":"closed-0319","creator":"subhamduary","resolver":"jinalgupta.","reason":"HP Increment Not Reflected on Dashboard After A1 & A2 Completion","category":"Health Points (HP)","msg_count":8,"resolution_hours":20.02,"date":"2026-03-02"},{"key":"closed-0286","creator":"devulapallipavanakrishna","resolver":"nitin_fighter1379","reason":"I started the ViBe course a week ago but was only able to complete 20% (by 27\/02\/2026) because of some other unforeseen activities. Will I lose my int","category":"Course / Learning","msg_count":17,"resolution_hours":74.47,"date":"2026-02-28"},{"key":"closed-0317","creator":"rahuldas04261","resolver":"jinalgupta.","reason":"Respected sir\/madam, I am from cohort 2. Few days ago I was 46 point ahead of base HP. But suddenly I had a trouble in my life.","category":"General Inquiry","msg_count":10,"resolution_hours":63.13,"date":"2026-03-02"},{"key":"closed-0284","creator":"kanakashree.","resolver":"jinalgupta.","reason":"I didn't knew anything in the beginning so I joined kruskalains in the beginning but it was started from 1 st jan itself I was supposed to join aksain","category":"Internship Eligibility","msg_count":12,"resolution_hours":32.53,"date":"2026-02-27"},{"key":"closed-0283","creator":"subhamsadangi","resolver":"jinalgupta.","reason":"Registration\/Portal Issue - Vinternship (AKSians Cohort)","category":"Registration / Login","msg_count":45,"resolution_hours":82.98,"date":"2026-02-27"},{"key":"closed-0277","creator":"iiitsavipawar_90767","resolver":"jinalgupta.","reason":"Regarding Task Deadline and Offer Letter. I enrolled the course on  18\/2\/2026 I want to know when will my first week over regarding I will schedule my","category":"Course / Learning","msg_count":18,"resolution_hours":97.54,"date":"2026-02-27"},{"key":"closed-0300","creator":"ekanshagrawal_43514","resolver":"jinalgupta.","reason":"I completed all course requirements before the deadline, but one quiz was not reflected as completed in the system. Since quiz status is not visible t","category":"Course / Learning","msg_count":11,"resolution_hours":41.59,"date":"2026-03-01"},{"key":"closed-0308","creator":"ananyaray0965","resolver":"nitin_fighter1379","reason":"Pls resolve my problem I can't access any lectures on vibe platformof mernstack","category":"Course / Learning","msg_count":22,"resolution_hours":33.0,"date":"2026-03-01"},{"key":"closed-0296","creator":"varada_surve","resolver":"jinalgupta.","reason":"I was unable to complete 20% of the vibe course within the 1st week due to college assignments... what should be the next step","category":"Course / Learning","msg_count":9,"resolution_hours":31.59,"date":"2026-03-01"},{"key":"closed-0298","creator":"coralone.","resolver":"jinalgupta.","reason":"I would like to know how to do case studies for MongoDB. I am trying to figure out where to access databases and how to submit case studies.","category":"Course / Learning","msg_count":9,"resolution_hours":29.16,"date":"2026-03-01"},{"key":"closed-0260","creator":"1471791648396419072","resolver":"jinalgupta.","reason":"Actually I have registered in the platform but my request is still in pending for approval.","category":"Registration / Login","msg_count":8,"resolution_hours":45.96,"date":"2026-02-25"},{"key":"closed-0257","creator":"oml1321","resolver":"jinalgupta.","reason":"i have a issue in viewing content on vibe platform","category":"Platform / Technical","msg_count":20,"resolution_hours":76.84,"date":"2026-02-25"},{"key":"closed-0237","creator":"1471868234131615744","resolver":"jinalgupta.","reason":"Failed to start quiz: Cannot read properties of undefined (reading '_id')","category":"Platform / Technical","msg_count":13,"resolution_hours":110.72,"date":"2026-02-25"},{"key":"closed-0315","creator":"debojyoti_bain","resolver":"jinalgupta.","reason":"A1 and A2 HP increment not showing in the dashboard","category":"Health Points (HP)","msg_count":11,"resolution_hours":4.84,"date":"2026-03-02"},{"key":"closed-0314","creator":"parchuripoojithkumar","resolver":"jinalgupta.","reason":"Restricted Access to the course","category":"Course / Learning","msg_count":11,"resolution_hours":3.19,"date":"2026-03-02"},{"key":"closed-0313","creator":"bhanu_teja_t_s","resolver":"jinalgupta.","reason":"About Offer letter","category":"Internship Eligibility","msg_count":9,"resolution_hours":1.96,"date":"2026-03-02"},{"key":"closed-0299","creator":"shobhansarkar_68209","resolver":"jinalgupta.","reason":"Deadline of Week 2 ; I joined 14th Feb","category":"General Inquiry","msg_count":11,"resolution_hours":22.62,"date":"2026-03-01"},{"key":"closed-0310","creator":"amankumarmehta_98006","resolver":"nitin_fighter1379","reason":"Unable to get the updated case studies and health point, i did 18 case studies submission but yet my score is low.","category":"Course / Learning","msg_count":13,"resolution_hours":1.91,"date":"2026-03-02"},{"key":"closed-0279","creator":"kumar_anmol16","resolver":"jinalgupta.","reason":"Hello Team, I had mailed on February 10 and was told the deduction due to 100% completion would be reverted, but it has still not been corrected","category":"General Inquiry","msg_count":12,"resolution_hours":76.84,"date":"2026-02-27"},{"key":"closed-0306","creator":"dilpreetsinghgill","resolver":"riyamehtaatwork","reason":"Registered on Vibe 3 days ago but still can't access the modules","category":"Registration / Login","msg_count":8,"resolution_hours":11.13,"date":"2026-03-01"},{"key":"closed-0270","creator":"sumaymittal","resolver":"jinalgupta.","reason":"HP not reverted for vibe completion glitch yet","category":"Course / Learning","msg_count":14,"resolution_hours":81.85,"date":"2026-02-26"},{"key":"closed-0219","creator":"shailaja_0607","resolver":"jinalgupta.","reason":"I have some login issues for the meeting","category":"Registration / Login","msg_count":9,"resolution_hours":133.26,"date":"2026-02-24"},{"key":"closed-0203","creator":"gvdkreddy","resolver":"jinalgupta.","reason":"I enrolled for Joy of Computing Python NPTEL Course, But didn't paid the fee. So what should I do ?","category":"NPTEL / Certification","msg_count":7,"resolution_hours":145.29,"date":"2026-02-23"},{"key":"closed-0199","creator":"akshaykumar.b","resolver":"jinalgupta.","reason":"nptel course regestration","category":"NPTEL / Certification","msg_count":7,"resolution_hours":76.43,"date":"2026-02-23"},{"key":"closed-0194","creator":"rajitchadar","resolver":"jinalgupta.","reason":"I got this internship through the social network, but I was unable to pay the NPTEL exam fee, so I won\u2019t receive the NPTEL certificate.","category":"NPTEL / Certification","msg_count":8,"resolution_hours":24.37,"date":"2026-02-23"},{"key":"closed-0193","creator":"reddynagavignesh","resolver":"jinalgupta.","reason":"NPTEL certificate requirement - completed joy of computing previously, enrolled in social networks now","category":"NPTEL / Certification","msg_count":16,"resolution_hours":146.73,"date":"2026-02-23"},{"key":"closed-0191","creator":"1100414771746046023","resolver":"jinalgupta.","reason":"I have already completed an NPTEL course offered by Sudarshan Sir in the previous semester. Am I also eligible for Vintership ?","category":"NPTEL / Certification","msg_count":8,"resolution_hours":146.73,"date":"2026-02-23"},{"key":"closed-0190","creator":"gou__7_24943","resolver":"jinalgupta.","reason":"An issue regarding the registration for internship - signed up with college email but cannot log in","category":"Registration / Login","msg_count":21,"resolution_hours":146.92,"date":"2026-02-23"},{"key":"closed-0186","creator":"shraddha111j_72520","resolver":"Unknown","reason":"I'm new to this internship program , please tell me which 20% courses I have to complete , please tell steps.","category":"Course / Learning","msg_count":33,"resolution_hours":148.25,"date":"2026-02-23"},{"key":"closed-0285","creator":"bhanu_teja_t_s","resolver":"jinalgupta.","reason":"I have enrolled to this internship in 18th and i have completed 20% on25th and 25% on 27th .So as per guidelines am i eligible to get offer letter??","category":"Internship Eligibility","msg_count":7,"resolution_hours":31.1,"date":"2026-02-28"},{"key":"closed-0251","creator":"1471805697590399060","resolver":"Unknown","reason":"General query about internship","category":"Internship Eligibility","msg_count":6,"resolution_hours":124.52,"date":"2026-02-23"},{"key":"closed-0255","creator":"1471821625095798900","resolver":"Unknown","reason":"Platform issue - content access","category":"Platform / Technical","msg_count":7,"resolution_hours":122.92,"date":"2026-02-23"},{"key":"closed-0290","creator":"1472038022534627400","resolver":"jinalgupta.","reason":"General query","category":"General Inquiry","msg_count":5,"resolution_hours":27.74,"date":"2026-02-28"},{"key":"closed-0288","creator":"1472023668369907700","resolver":"jinalgupta.","reason":"Seeking help with onboarding","category":"General Inquiry","msg_count":6,"resolution_hours":27.74,"date":"2026-02-28"},{"key":"closed-0225","creator":"1471786498399240200","resolver":"jinalgupta.","reason":"Course access issue","category":"Course / Learning","msg_count":8,"resolution_hours":144.32,"date":"2026-02-23"},{"key":"closed-0253","creator":"1471809944975671300","resolver":"Unknown","reason":"Registration assistance needed","category":"Registration / Login","msg_count":5,"resolution_hours":148.25,"date":"2026-02-23"},{"key":"closed-0352","creator":"sandeshdongaonkar","resolver":"nitin_fighter1379","reason":"I have enrolled on 17th feb in AKSians ,and completed the 20% of the vibe course on 27th feb .As I couldnt complete it in a week ,so will i get the o","category":"Course / Learning","msg_count":21,"resolution_hours":51.5,"date":"2026-03-04"},{"key":"closed-0312","creator":"shreya_16228","resolver":"nitin_fighter1379","reason":"submission of case study is not reflecting on dashboard","category":"Course / Learning","msg_count":13,"resolution_hours":24.5,"date":"2026-03-02"},{"key":"closed-0394","creator":"1472270524597166100","resolver":"a0rous","reason":"General inquiry","category":"General Inquiry","msg_count":5,"resolution_hours":0.34,"date":"2026-03-09"},{"key":"closed-0207","creator":"1471748427186692100","resolver":"a0rous","reason":"HP related query","category":"Health Points (HP)","msg_count":4,"resolution_hours":0.49,"date":"2026-02-23"},{"key":"closed-0352","creator":"sandeshdongaonkar","resolver":"nitin_fighter1379","reason":"Course milestone deadline extension request","category":"Course / Learning","msg_count":21,"resolution_hours":51.5,"date":"2026-03-04"}];
+
+// ── Charts config ─────────────────────────────────────────────────────────────
+Chart.defaults.color = '#8a7d6e';
+Chart.defaults.font = { family: "'IBM Plex Mono', monospace", size: 11 };
+
+// ── KPI ───────────────────────────────────────────────────────────────────────
+function buildKPIs() {
+  const total = TICKETS.length;
+  const avgRes = (TICKETS.reduce((s,t)=>s+t.resolution_hours,0)/total).toFixed(1);
+  const avgMsgs = (TICKETS.reduce((s,t)=>s+t.msg_count,0)/total).toFixed(1);
+  const fast = TICKETS.filter(t=>t.resolution_hours<6).length;
+  const resolvers = new Set(TICKETS.map(t=>t.resolver).filter(r=>r&&r!=='Unknown')).size;
+
+  const items = [
+    {label:'Total Tickets', val:total, sub:'Closed Jan–Mar 2026', color:'var(--accent)'},
+    {label:'Avg Resolution', val:avgRes+'h', sub:'Mean time to close', color:'var(--accent2)'},
+    {label:'Avg Messages', val:avgMsgs, sub:'Per ticket', color:'var(--accent3)'},
+    {label:'Resolved <6h', val:fast, sub:'Fast closures', color:'var(--accent4)'},
+    {label:'Active Resolvers', val:resolvers, sub:'Support team size', color:'var(--accent5)'},
+  ];
+
+  document.getElementById('kpiStrip').innerHTML = items.map(k=>`
+    <div class="kpi-item" style="--ki-color:${k.color}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>
+  `).join('');
+}
+
+// ── Volume Chart ──────────────────────────────────────────────────────────────
+function buildVolumeChart() {
+  const byDate = {};
+  TICKETS.forEach(t => { byDate[t.date] = (byDate[t.date]||0)+1; });
+  const labels = Object.keys(byDate).sort().filter(d => d >= '2026-01-01' && d <= '2026-03-31');
+  const vals = labels.map(d=>byDate[d]||0);
+
+  new Chart(document.getElementById('volumeChart'), {
+    type:'bar',
+    data:{ labels: labels.map(d=>d.slice(5)),
+      datasets:[{ data:vals, backgroundColor:'rgba(26,107,74,0.2)', borderColor:'#1a6b4a', borderWidth:1.5, borderRadius:3 }]
+    },
+    options:{ responsive:true, plugins:{ legend:{display:false} },
+      scales:{ x:{ grid:{color:'rgba(226,217,204,0.8)'}, ticks:{maxRotation:45, font:{size:10}} },
+                y:{ grid:{color:'rgba(226,217,204,0.8)'}, beginAtZero:true } }
+    }
+  });
+}
+
+// ── Category Donut ────────────────────────────────────────────────────────────
+function buildCatDonut() {
+  const cats = {};
+  TICKETS.forEach(t=>{ cats[t.category]=(cats[t.category]||0)+1; });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  new Chart(document.getElementById('catDonut'), {
+    type:'doughnut',
+    data:{ labels: sorted.map(x=>x[0]),
+      datasets:[{ data: sorted.map(x=>x[1]),
+        backgroundColor: sorted.map(x=>(CAT_META[x[0]]?.color||'#888')+'44'),
+        borderColor: sorted.map(x=>CAT_META[x[0]]?.color||'#888'),
+        borderWidth:2 }]
+    },
+    options:{ responsive:true, cutout:'58%',
+      plugins:{ legend:{ position:'right', labels:{boxWidth:10,padding:12,font:{size:11}} } }
+    }
+  });
+}
+
+// ── Category Bars ─────────────────────────────────────────────────────────────
+function buildCatBars() {
+  const cats = {};
+  TICKETS.forEach(t=>{ cats[t.category]=(cats[t.category]||0)+1; });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0][1];
+  document.getElementById('catBars').innerHTML = sorted.map(([cat,count])=>{
+    const m = CAT_META[cat]||{color:'#888',bg:'#eee'};
+    return `<div class="cat-row">
+      <div class="cat-name">${cat}</div>
+      <div class="cat-bar-bg"><div class="cat-bar-fill" style="width:${(count/max*100).toFixed(1)}%;background:${m.color}"></div></div>
+      <div class="cat-num">${count}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Resolution Chart ──────────────────────────────────────────────────────────
+function buildResChart() {
+  const b = {'<1h':0,'1–6h':0,'6–24h':0,'1–3d':0,'3–7d':0,'>7d':0};
+  TICKETS.forEach(t=>{
+    const h=t.resolution_hours;
+    if(h<1) b['<1h']++;
+    else if(h<6) b['1–6h']++;
+    else if(h<24) b['6–24h']++;
+    else if(h<72) b['1–3d']++;
+    else if(h<168) b['3–7d']++;
+    else b['>7d']++;
+  });
+  new Chart(document.getElementById('resChart'),{
+    type:'bar',
+    data:{ labels:Object.keys(b),
+      datasets:[{ data:Object.values(b), indexAxis:'y',
+        backgroundColor:['#1a6b4a44','#d9770644','#1d4ed844','#c0392b44','#6d28d944','#0e749044'],
+        borderColor:['#1a6b4a','#d97706','#1d4ed8','#c0392b','#6d28d9','#0e7490'],
+        borderWidth:1.5, borderRadius:3 }]
+    },
+    options:{ indexAxis:'y', responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{ x:{grid:{color:'rgba(226,217,204,0.8)'},beginAtZero:true},
+               y:{grid:{color:'rgba(226,217,204,0.8)'}} }
+    }
+  });
+}
+
+// ── Messages Chart ────────────────────────────────────────────────────────────
+function buildMsgChart() {
+  const b={'4–7':0,'8–11':0,'12–15':0,'16–20':0,'21–25':0,'26+':0};
+  TICKETS.forEach(t=>{
+    const m=t.msg_count;
+    if(m<=7) b['4–7']++;
+    else if(m<=11) b['8–11']++;
+    else if(m<=15) b['12–15']++;
+    else if(m<=20) b['16–20']++;
+    else if(m<=25) b['21–25']++;
+    else b['26+']++;
+  });
+  new Chart(document.getElementById('msgChart'),{
+    type:'bar',
+    data:{ labels:Object.keys(b),
+      datasets:[{ data:Object.values(b),
+        backgroundColor:'rgba(29,78,216,0.18)', borderColor:'#1d4ed8', borderWidth:1.5, borderRadius:3 }]
+    },
+    options:{ responsive:true, plugins:{legend:{display:false}},
+      scales:{ x:{grid:{color:'rgba(226,217,204,0.8)'}},
+               y:{grid:{color:'rgba(226,217,204,0.8)'},beginAtZero:true} }
+    }
+  });
+}
+
+// ── Resolver Table ────────────────────────────────────────────────────────────
+function buildResolverTable() {
+  const cnt={}, hrs={};
+  TICKETS.forEach(t=>{
+    const r=t.resolver||'Unknown';
+    cnt[r]=(cnt[r]||0)+1;
+    if(!hrs[r]) hrs[r]=[];
+    hrs[r].push(t.resolution_hours);
+  });
+  const sorted = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const max = sorted[0][1];
+  document.getElementById('resolverTable').innerHTML = `
+    <thead><tr>
+      <th></th><th>Resolver</th>
+      <th style="text-align:right">Tickets</th>
+      <th>Volume</th>
+      <th style="text-align:right">Avg Res.</th>
+    </tr></thead>
+    <tbody>
+    ${sorted.map(([name,count],i)=>{
+      const avg = (hrs[name].reduce((s,v)=>s+v,0)/hrs[name].length).toFixed(1);
+      return `<tr>
+        <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
+        <td style="font-family:var(--font-mono);font-size:0.78rem;color:var(--ink)">${name}</td>
+        <td style="text-align:right;color:var(--ink)">${count}</td>
+        <td class="res-bar-cell"><div class="res-bar-bg"><div class="res-bar-fill" style="width:${(count/max*100).toFixed(1)}%;background:${i===0?'var(--accent)':i===1?'var(--accent2)':'var(--accent3)'}"></div></div></td>
+        <td style="text-align:right;color:var(--muted)">${avg}h</td>
+      </tr>`;
+    }).join('')}
+    </tbody>`;
+}
+
+// ── Cat Resolution Chart ──────────────────────────────────────────────────────
+function buildCatResChart() {
+  const catH={};
+  TICKETS.forEach(t=>{
+    if(!catH[t.category]) catH[t.category]=[];
+    catH[t.category].push(t.resolution_hours);
+  });
+  const cats = Object.keys(catH);
+  const avgs = cats.map(c=>(catH[c].reduce((s,v)=>s+v,0)/catH[c].length).toFixed(1));
+  const colors = cats.map(c=>CAT_META[c]?.color||'#888');
+  new Chart(document.getElementById('catResChart'),{
+    type:'bar',
+    data:{ labels:cats.map(c=>c.length>16?c.slice(0,14)+'…':c),
+      datasets:[{ data:avgs,
+        backgroundColor:colors.map(c=>c+'33'), borderColor:colors, borderWidth:1.5, borderRadius:3 }]
+    },
+    options:{ responsive:true, plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>` ${ctx.raw}h avg`}}},
+      scales:{ x:{grid:{color:'rgba(226,217,204,0.8)'},ticks:{maxRotation:30,font:{size:10}}},
+               y:{grid:{color:'rgba(226,217,204,0.8)'},beginAtZero:true,ticks:{callback:v=>v+'h'}} }
+    }
+  });
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+const CATS_ALL = ['All', ...Object.keys(CAT_META)];
+let currentCat = 'All', currentSearch = '', currentPage = 1;
+const PG = 12;
+
+document.getElementById('filtWrap').innerHTML = CATS_ALL.map(c=>`
+  <button class="filt-btn ${c==='All'?'on':''}" onclick="setFilter(this,'${c}')">${c==='All'?'All':c.split('/')[0].trim()}</button>
+`).join('');
+
+function setFilter(btn, cat) {
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  currentCat = cat; currentPage = 1; renderTable();
+}
+
+document.getElementById('searchInp').addEventListener('input', e => {
+  currentSearch = e.target.value.toLowerCase();
+  currentPage = 1; renderTable();
+});
+
+function resTag(h) {
+  if(h<1) return {text:'<1h', bg:'#dcfce7', color:'#1a6b4a'};
+  if(h<6) return {text:h.toFixed(1)+'h', bg:'#dbeafe', color:'#1d4ed8'};
+  if(h<24) return {text:h.toFixed(1)+'h', bg:'#fef3c7', color:'#d97706'};
+  const d=(h/24).toFixed(1);
+  return {text:d+'d', bg:'#fee2e2', color:'#c0392b'};
+}
+
+function getFiltered() {
+  return TICKETS.filter(t=>{
+    const mc = currentCat==='All' || t.category===currentCat;
+    const ms = !currentSearch || t.reason.toLowerCase().includes(currentSearch) ||
+               t.creator.toLowerCase().includes(currentSearch) ||
+               t.resolver.toLowerCase().includes(currentSearch);
+    return mc && ms;
+  });
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const maxPg = Math.max(1, Math.ceil(filtered.length/PG));
+  if(currentPage>maxPg) currentPage=1;
+  const slice = filtered.slice((currentPage-1)*PG, currentPage*PG);
+
+  document.getElementById('ticketTbody').innerHTML = slice.map((t,i)=>{
+    const {text,bg,color}=resTag(t.resolution_hours);
+    const cm = CAT_META[t.category]||{color:'#888',bg:'#eee'};
+    return `<tr>
+      <td style="color:var(--muted);font-size:0.7rem">${(currentPage-1)*PG+i+1}</td>
+      <td>${t.date.slice(5)}</td>
+      <td style="color:var(--ink2)">${t.creator}</td>
+      <td style="color:var(--ink2)">${t.resolver}</td>
+      <td><span class="cat-badge" style="background:${cm.bg};color:${cm.color}">${t.category}</span></td>
+      <td class="reason-td" title="${t.reason.replace(/"/g,'&quot;')}">${t.reason}</td>
+      <td style="color:var(--accent4)">${t.msg_count}</td>
+      <td><span class="res-badge" style="background:${bg};color:${color}">${text}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  let pg = `<span class="pgn-info">${filtered.length} results</span>`;
+  for(let p=1;p<=Math.min(maxPg,8);p++)
+    pg += `<button class="pgn-btn ${p===currentPage?'on':''}" onclick="goPage(${p})">${p}</button>`;
+  if(maxPg>8) pg += `<span class="pgn-info">…${maxPg}</span>`;
+  document.getElementById('pgn').innerHTML = pg;
+}
+
+function goPage(p) { currentPage=p; renderTable(); }
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+buildKPIs();
+buildVolumeChart();
+buildCatDonut();
+buildCatBars();
+buildResChart();
+buildMsgChart();
+buildResolverTable();
+buildCatResChart();
+renderTable();
+</script>
+</body>
+</html>
